@@ -36,8 +36,8 @@ namespace cry
                 market.Add((string)i["MARKET"], Math.Round(double.Parse((string)i["VOLUME24HOUR"]), 2));
             }
 
-            var dic = market.ToList();
-            dic.Sort((pair1, pair2) => -pair1.Value.CompareTo(pair2.Value));
+            var dic = market.OrderByDescending(m => m.Value).Take(10);
+
 
 
             // Cryptocurrency Markets according to Volume traded within last 24 hours
