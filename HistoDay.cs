@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -18,15 +19,15 @@ namespace cry
         /// <param name="fsym">Fsym.</param>
         /// <param name="tsym">Tsym.</param>
         /// <param name="exchange">Exchange.</param>
-        public static async Task<Series<int, float>> FetchCryptoOhlcByExchange(string fsym, string tsym, string exchange)
+        public static async Task<Series<DateTimeOffset, float>> FetchCryptoOhlcByExchange(string fsym, string tsym, string exchange)
         {
             var cols = new[] {"date", "timestamp", "open", "high", "low", "close"};
             var lst = new[] {"time", "open", "high", "low", "close"};
             var timestampToday = DateTimeOffset.Now.ToUnixTimeSeconds();
             var currTimestamp = timestampToday;
 
-            var data = Frame.CreateEmpty<int, string>();
-            var df0 = Frame.CreateEmpty<int, string>();
+            var data = Frame.CreateEmpty<DateTimeOffset, string>();
+            var df0 = Frame.CreateEmpty<DateTimeOffset, string>();
             for (var j = 0; j < 2; j++)
             {
                 var url = "https://min-api.cryptocompare.com/data/histoday?fsym=" + fsym
@@ -40,12 +41,11 @@ namespace cry
 
                 var rows = Enumerable.Range(0, 2000).Select(i => new HistoDayData
                     {
-                        Index = i,
-                        TimeStamp = (long) dic["Data"][i]["time"],
-                        OpenValue = (long) dic["Data"][i]["open"],
-                        HighValue = (long) dic["Data"][i]["high"],
-                        LowValue = (long) dic["Data"][i]["low"],
-                        CloseValue = (long) dic["Data"][i]["close"]
+                        TimeStamp = DateTimeOffset.FromUnixTimeSeconds((long) dic["Data"][i]["time"]),
+                        OpenValue = (float) dic["Data"][i]["open"],
+                        HighValue = (float) dic["Data"][i]["high"],
+                        LowValue = (float) dic["Data"][i]["low"],
+                        CloseValue = (float) dic["Data"][i]["close"]
                     })
                     .Where(o => o.OpenValue + o.HighValue + o.LowValue + o.CloseValue > 0)
                     .Select(v =>
@@ -54,39 +54,43 @@ namespace cry
                         // KeyValue representing row key with row data
                         var sb = new SeriesBuilder<string>
                         {
-                            {"time", DateTimeOffset
-                                .FromUnixTimeSeconds(v.TimeStamp)
-                                .ToString("yyyy-M-d")},
+                            {"time", v.TimeStamp.ToString("yyyy-MMM-dd")},
                             {"open", v.OpenValue},
                             {"high", v.HighValue},
                             {"low", v.LowValue},
                             {"close", v.CloseValue}
                         };
-                        return KeyValue.Create(v.Index, sb.Series);
+                        return KeyValue.Create(v.TimeStamp, sb.Series);
                     });
 
                 // Turn sequence of row information into data frame
                 var df = Frame.FromRows(rows);
+                df.Print();
 
-                currTimestamp = (int) df["time", 0];
+                var frameDate = df.IndexRows<string>("time").SortRowsByKey();
+                frameDate.Print();
 
-                if (j == 0)
+                var byOffs = frameDate.SelectRowKeys(kvp => DateTimeOffset.Parse(kvp.Key, null, DateTimeStyles.AssumeUniversal));
 
-                    df0 = df.Clone();
-                else
-                    data = df.Join(df0, JoinKind.Outer);
+                byOffs.Print();
+                // var d = frameDate.GetColumn<DateTimeOffset>("time");
+
+                //if (j == 0)
+
+                //    df0 = df.Clone();
+                //else
+                //    data = df.Join(df0, JoinKind.Outer);
             }
             return data.GetRowsAs<float>();
         }
 
         internal struct HistoDayData
         {
-            public int Index;
-            public long TimeStamp;
-            public long OpenValue;
-            public long HighValue;
-            public long LowValue;
-            public long CloseValue;
+            public DateTimeOffset TimeStamp;
+            public float OpenValue;
+            public float HighValue;
+            public float LowValue;
+            public float CloseValue;
         }
     }
 }
