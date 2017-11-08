@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace cry
 {
@@ -12,44 +7,25 @@ namespace cry
     {
         static void Main(string[] args)
         {
-            MainAsync(args).GetAwaiter().GetResult();
+            MainAsync().GetAwaiter().GetResult();
         }
 
 
-        private static async Task MainAsync(string[] args)
+        private static async Task MainAsync()
         {
             // define a pair
             const string fsym = "ETH";
             const string tsym = "USD";
+            const string exchange = "CCCAGG";
 
-            var url = "https://www.cryptocompare.com/api/data/coinsnapshot/?fsym=" + fsym + "&tsym=" + tsym;
-
-            var client = new HttpClient();
-            var result = await client.GetStringAsync(url);
-            JObject obj = JObject.Parse(result);
-
-
-            var market = new Dictionary<string, double>();
-            var d = obj["Data"]["Exchanges"];
-            foreach (var i in d)
+            var markets = await CoinSnapshot.GetCryptoCurrencyMarkets(fsym, tsym);
+            foreach (var item in markets)
             {
-                market.Add((string)i["MARKET"], Math.Round(double.Parse((string)i["VOLUME24HOUR"]), 2));
+                Console.WriteLine("{0:s}\t{1:f}", item.Key, item.Value);
             }
 
-            var dic = market.OrderByDescending(m => m.Value).Take(10);
 
-
-
-            // Cryptocurrency Markets according to Volume traded within last 24 hours
-            foreach (var item in dic)
-            {
-                System.Console.WriteLine("{0:s}\t{1:f}", item.Key, item.Value);
-            }
-                
-
-
-
-
+            var ohlc = await HistoDay.FetchCryptoOhlcByExchange(fsym, tsym, exchange);
 
         }
     }
