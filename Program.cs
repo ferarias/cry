@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Deedle;
 
 namespace cry
 {
@@ -25,7 +26,15 @@ namespace cry
             }
 
 
-            var ohlc = await HistoDay.FetchCryptoOhlcByExchange(fsym, tsym, exchange);
+            //var ohlc = await HistoDay.FetchCryptoOhlcByExchange(fsym, tsym, exchange);
+
+            foreach (var market in markets)
+            {
+                System.Console.Write($"{market}...");
+                var df = await HistoDay.FetchCryptoOhlcByExchange(fsym, tsym, market.Key);
+                var filtered = df.Where(x => x.Key.AddMonths(6) > DateTimeOffset.Now).GetColumn<float>("close");
+                System.Console.WriteLine("downloaded");
+            }
 
         }
     }
