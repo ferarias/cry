@@ -10,7 +10,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceRoot}/src/Cry/bin/Debug/netcoreapp20/cry.dll",
+            "program": "${workspaceRoot}/src/Cry/bin/Debug/net461/cry.exe",
             "args": [],
             "cwd": "${workspaceRoot}/src/Cry",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
