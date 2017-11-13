@@ -9,24 +9,29 @@ namespace cry
 {
     public static class CoinSnapshot
     {
+        private const string BaseUrl = "https://www.cryptocompare.com/api/data/coinsnapshot";
+
         /// <summary>
-        /// Cryptocurrency Markets according to Volume traded within last 24 hours
+        /// Get cryptocurrency exchanges according to volume traded within last 24 hours
         /// </summary>
         /// <returns></returns>
-        public static async Task<IEnumerable<KeyValuePair<string, double>>> GetCryptoCurrencyMarkets(string fsym, string tsym)
+        public static async Task<IEnumerable<KeyValuePair<string, double>>> GetCryptoCurrencyMarkets(
+            string fsym,
+            string tsym)
         {
-            var url = "https://www.cryptocompare.com/api/data/coinsnapshot/?fsym=" + fsym + "&tsym=" + tsym;
-            var client = new HttpClient();
-            var result = await client.GetStringAsync(url);
-            var obj = JObject.Parse(result);
+            var url = $"{BaseUrl}/?fsym={fsym}&tsym={tsym}";
+            using (var client = new HttpClient())
+            {
+                var result = await client.GetStringAsync(url);
+                var parsedResult = JObject.Parse(result);
 
-            var d = obj["Data"]["Exchanges"];
-            var market = d
-                .ToDictionary(i => (string)i["MARKET"], i => Math.Round(double.Parse((string)i["VOLUME24HOUR"]), 2))
-                .OrderByDescending(m => m.Value)
-                .Take(10);
-
-            return market;
+                return (from m in parsedResult["Data"]["Exchanges"]
+                        select new KeyValuePair<string, double>(
+                            (string) m["MARKET"],
+                            Math.Round(double.Parse((string) m["VOLUME24HOUR"]), 2))
+                    )
+                    .OrderByDescending(m => m.Value);
+            }
         }
     }
 }
