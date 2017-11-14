@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Cry;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
@@ -11,6 +12,13 @@ namespace cry
 {
     class Program
     {
+        // some constants...
+        private static string _basePath;
+
+        const int MaxMarkets = 15;
+        const double ClosePriceThreshold = 100;
+        const int MaxItemsToRetrieveExchangeData = 2000;
+
         static void Main(string[] args)
         {
             MainAsync().GetAwaiter().GetResult();
@@ -19,110 +27,70 @@ namespace cry
 
         private static async Task MainAsync()
         {
+            _basePath = AppDomain.CurrentDomain.BaseDirectory;
+
             // define a pair
             const string fsym = "ETH";
             const string tsym = "USD";
-            const int maxMarkets = 15;
 
             // Get best markets to operate with
-            var markets = await CoinSnapshot.GetCryptoCurrencyMarkets(fsym, tsym);
+            var markets = await CoinSnapshot.GetVolume24HByMarket(fsym, tsym);
 
-            var closePriceTimeSeriesByExchange = new List<KeyValuePair<string, IEnumerable<KeyValuePair<DateTimeOffset, double>>>>();
-            foreach (var market in markets.Where(x => x.Value > 100))
+            var closePriceTimeSeriesByExchange = new Dictionary<string, IDictionary<DateTimeOffset, double>>();
+            foreach (var market in markets
+                .OrderByDescending(x => x.Value)
+                .Where(x => x.Value > ClosePriceThreshold))
             {
                 Console.Write($"{market}...");
 
-                var exchangeInfo = await HistoDay.GetExchangeData(fsym, tsym, market.Key, 2000);
-                if (exchangeInfo.Count() > 1)
-                {
-                    var f = from c in exchangeInfo
-                            where c.Value.TimeStamp.AddMonths(6) > DateTimeOffset.Now
-                            select new KeyValuePair<DateTimeOffset, double>(c.Key, c.Value.CloseValue);
-                    closePriceTimeSeriesByExchange.Add(new KeyValuePair<string, IEnumerable<KeyValuePair<DateTimeOffset, double>>>(market.Key, f));
-                    Console.WriteLine($"downloaded ({closePriceTimeSeriesByExchange.Count} of {maxMarkets})");
-                    if (closePriceTimeSeriesByExchange.Count == maxMarkets) break;
-                }
+                var dictionary = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market.Key);
+                if(dictionary.Any())
+                    closePriceTimeSeriesByExchange.Add(market.Key, dictionary);
+
+                Console.WriteLine($"downloaded ({closePriceTimeSeriesByExchange.Count} of {MaxMarkets})");
+
+                if (closePriceTimeSeriesByExchange.Count == MaxMarkets) break;
             }
             PlotClosePrices(closePriceTimeSeriesByExchange);
 
-
-            var list = new List<(string MarketA, string MarketB, double Average, double StdDev)>();
-            for (var i = 0; i < closePriceTimeSeriesByExchange.Count; i++)
-            {
-                for (var j = i + 1; j < closePriceTimeSeriesByExchange.Count; j++)
-                {
-                    var marketA = closePriceTimeSeriesByExchange[i];
-                    var marketB = closePriceTimeSeriesByExchange[j];
-                    var timeSeriesA = marketA.Value;
-                    var timeSeriesB = marketB.Value;
-
-                    // spread is the difference of the price between the two markets
-                    var spread = (from a in timeSeriesA
-                                  join b in timeSeriesB
-                                      on a.Key equals b.Key
-                                  select Math.Abs(a.Value - b.Value)).ToList();
-
-
-                    // new we calculate the average and standard deviation
-                    var count = spread.Count;
-                    var avg = spread.Average();
-                    //Perform the Sum of (value-avg)^2
-                    var sum = spread.Sum(d => Math.Pow(d - avg, 2));
-                    var sd = Math.Sqrt(sum / count);
-
-                    list.Add((marketA.Key, marketB.Key, avg, sd));
-                }
-            }
-            var orderedList = list.OrderByDescending(o => o.Average);
+            var spreads = Spread.GetSpreads(closePriceTimeSeriesByExchange);
 
             Console.WriteLine("----Market 1 ----Market 2\t Average Std.Dev.");
-            foreach (var tuple in orderedList)
+            foreach (var spread in spreads)
             {
-                Console.WriteLine("{0,12} {1,12}\t{2,8:#.###} {3,8:#.###}", tuple.MarketA, tuple.MarketB, tuple.Average, tuple.StdDev);
+                Console.WriteLine("{0,12} {1,12}\t{2,8:#.###} {3,8:#.###}", spread.Market1, spread.Market2,
+                    spread.Average, spread.StandardDeviation);
             }
 
-            Console.Write("Market 1?");
+            Console.Write("Market 1? ");
             var market1 = Console.ReadLine();
-            Console.Write("Market 2?");
+            Console.Write("Market 2? ");
             var market2 = Console.ReadLine();
 
-            var dic1 = new Dictionary<DateTimeOffset, float>();
-            var dic2 = new Dictionary<DateTimeOffset, float>();
-            var df1 = await HistoDay.GetExchangeData(fsym, tsym, market1, 2000);
-            if (df1.Count() > 1)
-            {
-                dic1 = df1.Where(c => c.Value.TimeStamp.AddMonths(6) > DateTimeOffset.Now)
-                                    .ToDictionary(c => c.Key, c => c.Value.CloseValue);
-            }
-            var df2 = await HistoDay.GetExchangeData(fsym, tsym, market2, 2000);
-            if (df2.Count() > 1)
-            {
-                dic2 = df2.Where(c => c.Value.TimeStamp.AddMonths(6) > DateTimeOffset.Now)
-                                    .ToDictionary(c => c.Key, c => c.Value.CloseValue);
-            }
+            var dic1 = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market1);
+            var dic2 = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market2);
+            PlotMarketPairComparison(market1, dic1, market2, dic2, Path.Combine(_basePath, "Comparison.pdf"));
 
-            var data = new List<(DateTimeOffset Date, float MarketA, float MarketB)>();
-            foreach (var item in dic1)
-            {
-                if (dic2.ContainsKey(item.Key))
-                {
-                    data.Add((Date: item.Key, MarketA: item.Value, MarketB: dic2[item.Key]));
-                }
-            }
-            PlotMarketPairComparison(market1, dic1, market2, dic2);
+
+            var data = from i1 in dic1
+                join i2 in dic2 on i1.Key equals i2.Key
+                select new Comparison {Date = i1.Key, Coin1 = i1.Value, Coin2 = i2.Value};
+
             Console.WriteLine("--------Date ----Market A ----Market B");
-            foreach (var tuple in data)
+            foreach (var item in data)
             {
-                Console.WriteLine("{0,12} {1,8:#.###} {2,8:#.###}", tuple.Date, tuple.MarketA, tuple.MarketB);
+                Console.WriteLine("{0,12} {1,8:#.###} {2,8:#.###}", item.Date, item.Coin1, item.Coin2);
             }
-
         }
+
 
         private static void PlotMarketPairComparison(
             string market1,
-            Dictionary<DateTimeOffset, float> series1,
+            IDictionary<DateTimeOffset, double> series1,
             string market2,
-            Dictionary<DateTimeOffset, float> series2)
+            IDictionary<DateTimeOffset, double> series2,
+            string fileName)
+
         {
             var model = new PlotModel
             {
@@ -134,24 +102,30 @@ namespace cry
             };
 
 
-            var lineSeries1 = new LineSeries() { Title = market1, StrokeThickness = 1, Color = OxyColors.Blue };
+            var lineSeries1 = new LineSeries() {Title = market1, StrokeThickness = 1, Color = OxyColors.Blue};
             lineSeries1.Points.AddRange(series1.Select(x => new DataPoint(Axis.ToDouble(x.Key.Date), x.Value)));
             model.Series.Add(lineSeries1);
-            var lineSeries2 = new LineSeries() { Title = market2, StrokeThickness = 1, Color = OxyColors.Red };
+            var lineSeries2 = new LineSeries() {Title = market2, StrokeThickness = 1, Color = OxyColors.Red};
             lineSeries2.Points.AddRange(series2.Select(x => new DataPoint(Axis.ToDouble(x.Key.Date), x.Value)));
             model.Series.Add(lineSeries2);
 
-            model.Axes.Add(new DateTimeAxis { Position = AxisPosition.Bottom, Maximum = Axis.ToDouble(DateTime.Now), StringFormat = "MMMM" });
-
-            using (var stream = File.Create(@"E:\temp\Comparison.pdf"))
+            model.Axes.Add(new DateTimeAxis
             {
-                var pdfExporter = new PdfExporter { Width = 600, Height = 400 };
-                pdfExporter.Export(model, stream);
+                Position = AxisPosition.Bottom,
+                Maximum = Axis.ToDouble(DateTime.Now),
+                StringFormat = "MMMM"
+            });
 
+            using (var stream = File.Create(fileName))
+            {
+                var pdfExporter = new PdfExporter {Width = 600, Height = 400};
+                pdfExporter.Export(model, stream);
             }
         }
 
-        private static void PlotClosePrices(List<KeyValuePair<string, IEnumerable<KeyValuePair<DateTimeOffset, double>>>> closePriceTimeSeriesByExchange)
+
+        private static void PlotClosePrices(
+            Dictionary<string, IDictionary<DateTimeOffset, double>> closePriceTimeSeriesByExchange)
         {
             var model = new PlotModel
             {
@@ -164,17 +138,23 @@ namespace cry
 
             foreach (var priceTimeSeries in closePriceTimeSeriesByExchange)
             {
-                var cs = new LineSeries() { Title = priceTimeSeries.Key, StrokeThickness = 0.2 };
-                cs.Points.AddRange(priceTimeSeries.Value.Select(x => new DataPoint(Axis.ToDouble(x.Key.Date), x.Value)));
+                var cs = new LineSeries() {Title = priceTimeSeries.Key, StrokeThickness = 0.2};
+                cs.Points.AddRange(
+                    priceTimeSeries.Value.Select(x => new DataPoint(Axis.ToDouble(x.Key.Date), x.Value)));
                 model.Series.Add(cs);
             }
-            model.Axes.Add(new DateTimeAxis { Position = AxisPosition.Bottom, Maximum = Axis.ToDouble(DateTime.Now), StringFormat = "MMMM" });
-
-            using (var stream = File.Create(@"E:\temp\Markets.pdf"))
+            model.Axes.Add(new DateTimeAxis
             {
-                var pdfExporter = new PdfExporter { Width = 600, Height = 400 };
-                pdfExporter.Export(model, stream);
+                Position = AxisPosition.Bottom,
+                Maximum = Axis.ToDouble(DateTime.Now),
+                StringFormat = "MMMM"
+            });
 
+
+            using (var stream = File.Create(Path.Combine(_basePath, "Markets.pdf")))
+            {
+                var pdfExporter = new PdfExporter {Width = 600, Height = 400};
+                pdfExporter.Export(model, stream);
             }
         }
     }
