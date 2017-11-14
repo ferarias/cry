@@ -13,7 +13,7 @@ namespace cry
     class Program
     {
         // some constants...
-        private static string _basePath;
+        private static string _basePath = AppDomain.CurrentDomain.BaseDirectory;
 
         const int MaxMarkets = 15;
         const double ClosePriceThreshold = 100;
@@ -27,8 +27,6 @@ namespace cry
 
         private static async Task MainAsync()
         {
-            _basePath = AppDomain.CurrentDomain.BaseDirectory;
-
             // define a pair
             const string fsym = "ETH";
             const string tsym = "USD";
@@ -43,15 +41,15 @@ namespace cry
             {
                 Console.Write($"{market}...");
 
-                var dictionary = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market.Key);
-                if(dictionary.Any())
-                    closePriceTimeSeriesByExchange.Add(market.Key, dictionary);
+                var timeSeries = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market.Key);
+                if(timeSeries.Any())
+                    closePriceTimeSeriesByExchange.Add(market.Key, timeSeries);
 
                 Console.WriteLine($"downloaded ({closePriceTimeSeriesByExchange.Count} of {MaxMarkets})");
 
                 if (closePriceTimeSeriesByExchange.Count == MaxMarkets) break;
             }
-            PlotClosePrices(closePriceTimeSeriesByExchange);
+            PlotClosePrices(closePriceTimeSeriesByExchange, "Markets");
 
             var spreads = Spread.GetSpreads(closePriceTimeSeriesByExchange);
 
@@ -67,17 +65,15 @@ namespace cry
             Console.Write("Market 2? ");
             var market2 = Console.ReadLine();
 
-            var dic1 = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market1);
-            var dic2 = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market2);
-            PlotMarketPairComparison(market1, dic1, market2, dic2, Path.Combine(_basePath, "Comparison.pdf"));
-
-
-            var data = from i1 in dic1
-                join i2 in dic2 on i1.Key equals i2.Key
-                select new Comparison {Date = i1.Key, Coin1 = i1.Value, Coin2 = i2.Value};
+            var market1timeSeries = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market1);
+            var market2timeSeries = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market2);
+            var comparison = from series1row in market1timeSeries
+                             join series2row in market2timeSeries on series1row.Key equals series2row.Key
+                             select new Comparison { Date = series1row.Key, Coin1 = series1row.Value, Coin2 = series2row.Value };
+            PlotMarketPairComparison(market1, market1timeSeries, market2, market2timeSeries, $"{market1} vs {market2}");
 
             Console.WriteLine("--------Date ----Market A ----Market B");
-            foreach (var item in data)
+            foreach (var item in comparison)
             {
                 Console.WriteLine("{0,12} {1,8:#.###} {2,8:#.###}", item.Date, item.Coin1, item.Coin2);
             }
@@ -89,12 +85,12 @@ namespace cry
             IDictionary<DateTimeOffset, double> series1,
             string market2,
             IDictionary<DateTimeOffset, double> series2,
-            string fileName)
+            string title)
 
         {
             var model = new PlotModel
             {
-                Title = market1 + " vs " + market2,
+                Title = title,
                 LegendPlacement = LegendPlacement.Outside,
                 LegendPosition = LegendPosition.BottomCenter,
                 LegendOrientation = LegendOrientation.Horizontal,
@@ -116,7 +112,7 @@ namespace cry
                 StringFormat = "MMMM"
             });
 
-            using (var stream = File.Create(fileName))
+            using (var stream = File.Create(Path.Combine(_basePath, $"{title}.pdf")))
             {
                 var pdfExporter = new PdfExporter {Width = 600, Height = 400};
                 pdfExporter.Export(model, stream);
@@ -125,11 +121,12 @@ namespace cry
 
 
         private static void PlotClosePrices(
-            Dictionary<string, IDictionary<DateTimeOffset, double>> closePriceTimeSeriesByExchange)
+            Dictionary<string, IDictionary<DateTimeOffset, double>> closePriceTimeSeriesByExchange,
+        string title)
         {
             var model = new PlotModel
             {
-                Title = "Markets",
+                Title = title,
                 LegendPlacement = LegendPlacement.Outside,
                 LegendPosition = LegendPosition.BottomCenter,
                 LegendOrientation = LegendOrientation.Horizontal,
@@ -151,7 +148,7 @@ namespace cry
             });
 
 
-            using (var stream = File.Create(Path.Combine(_basePath, "Markets.pdf")))
+            using (var stream = File.Create(Path.Combine(_basePath, $"{title}.pdf")))
             {
                 var pdfExporter = new PdfExporter {Width = 600, Height = 400};
                 pdfExporter.Export(model, stream);
