@@ -15,7 +15,7 @@ namespace Cry
         private const int MaxItemsToRetrieveExchangeData = 2000;
         private static readonly string BasePath = AppDomain.CurrentDomain.BaseDirectory;
 
-        private const int MaxMarkets = 15;
+        private const int MaxMarkets = 12;
         private const double ClosePriceThreshold = 100;
 
         private static void Main()
@@ -77,8 +77,15 @@ namespace Cry
                 Console.WriteLine("{0,12} {1,8:#.###} {2,8:#.###}", item.Date, item.Coin1, item.Coin2);
             }
 
-            StatArb.BackTesting(comparison);
-
+            try
+            {
+                StatArb.BackTesting(comparison);
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex);
+                throw;
+            }
         }
 
         
