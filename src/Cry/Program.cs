@@ -41,7 +41,7 @@ namespace Cry
                 Console.Write($"{market}...");
 
                 var timeSeries = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market.Key, MaxItemsToRetrieveExchangeData);
-                if(timeSeries.Any())
+                if (timeSeries.Any())
                     closePriceTimeSeriesByExchange.Add(market.Key, timeSeries);
 
                 Console.WriteLine($"downloaded ({closePriceTimeSeriesByExchange.Count} of {MaxMarkets})");
@@ -76,8 +76,12 @@ namespace Cry
             {
                 Console.WriteLine("{0,12} {1,8:#.###} {2,8:#.###}", item.Date, item.Coin1, item.Coin2);
             }
+
+            StatArb.BackTesting(comparison);
+
         }
 
+        
 
         private static void PlotMarketPairComparison(
             string market1,
@@ -97,10 +101,10 @@ namespace Cry
             };
 
 
-            var lineSeries1 = new LineSeries() {Title = market1, StrokeThickness = 1, Color = OxyColors.Blue};
+            var lineSeries1 = new LineSeries() { Title = market1, StrokeThickness = 1, Color = OxyColors.Blue };
             lineSeries1.Points.AddRange(series1.Select(x => new DataPoint(Axis.ToDouble(x.Key.Date), x.Value)));
             model.Series.Add(lineSeries1);
-            var lineSeries2 = new LineSeries() {Title = market2, StrokeThickness = 1, Color = OxyColors.Red};
+            var lineSeries2 = new LineSeries() { Title = market2, StrokeThickness = 1, Color = OxyColors.Red };
             lineSeries2.Points.AddRange(series2.Select(x => new DataPoint(Axis.ToDouble(x.Key.Date), x.Value)));
             model.Series.Add(lineSeries2);
 
@@ -113,7 +117,7 @@ namespace Cry
 
             using (var stream = File.Create(Path.Combine(BasePath, $"{title}.pdf")))
             {
-                var pdfExporter = new PdfExporter {Width = 600, Height = 400};
+                var pdfExporter = new PdfExporter { Width = 600, Height = 400 };
                 pdfExporter.Export(model, stream);
             }
         }
@@ -134,7 +138,7 @@ namespace Cry
 
             foreach (var priceTimeSeries in closePriceTimeSeriesByExchange)
             {
-                var cs = new LineSeries() {Title = priceTimeSeries.Key, StrokeThickness = 0.2};
+                var cs = new LineSeries() { Title = priceTimeSeries.Key, StrokeThickness = 0.2 };
                 cs.Points.AddRange(
                     priceTimeSeries.Value.Select(x => new DataPoint(Axis.ToDouble(x.Key.Date), x.Value)));
                 model.Series.Add(cs);
@@ -149,7 +153,7 @@ namespace Cry
 
             using (var stream = File.Create(Path.Combine(BasePath, $"{title}.pdf")))
             {
-                var pdfExporter = new PdfExporter {Width = 600, Height = 400};
+                var pdfExporter = new PdfExporter { Width = 600, Height = 400 };
                 pdfExporter.Export(model, stream);
             }
         }
