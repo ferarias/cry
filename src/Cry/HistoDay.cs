@@ -5,14 +5,12 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using System.Globalization;
-using Cry;
 
-namespace cry
+namespace Cry
 {
     public static class HistoDay
     {
         private const string BaseUrl = "https://min-api.cryptocompare.com/data/histoday";
-        private const int MaxItemsToRetrieveExchangeData = 2000;
         private const int SpreadDays = 180;
 
         /// <summary>
@@ -26,14 +24,14 @@ namespace cry
         /// <param name="exchange">Exchange.</param>
         /// <param name="limit">Limit n of rows</param>
         public static async Task<IDictionary<DateTimeOffset, HistoDayData>> GetExchangeData(
-        string fsym, string tsym, string exchange, int limit)
+            string fsym, string tsym, string exchange, int limit)
         {
             var url = $"{BaseUrl}?fsym={fsym}&tsym={tsym}&e={exchange}&limit={limit}";
             var client = new HttpClient();
             var ci = new CultureInfo("en-US");
             var result = await client.GetStringAsync(url);
             var parsedResult = JObject.Parse(result);
-            if ((string)parsedResult["Response"] == "Error") throw new Exception((string)parsedResult["Message"]);
+            if ((string) parsedResult["Response"] == "Error") throw new Exception((string) parsedResult["Message"]);
 
 
             return new Dictionary<DateTimeOffset, HistoDayData>(
@@ -50,24 +48,16 @@ namespace cry
                 select new KeyValuePair<DateTimeOffset, HistoDayData>(new DateTimeOffset(h.TimeStamp.Date), h));
         }
 
-        public static async Task<IDictionary<DateTimeOffset, double>> GetExchangeCloseTimeSeries(string fsym, string tsym, string market)
+        public static async Task<IDictionary<DateTimeOffset, double>> GetExchangeCloseTimeSeries(string fsym,
+            string tsym, string market, int limit)
         {
-            var exchangeInfo = await GetExchangeData(fsym, tsym, market, MaxItemsToRetrieveExchangeData);
+            var exchangeInfo = await GetExchangeData(fsym, tsym, market, limit);
             if (exchangeInfo.Count <= 1) return new Dictionary<DateTimeOffset, double>();
 
             var dictionary = exchangeInfo
                 .Where(c => c.Value.TimeStamp.Add(TimeSpan.FromDays(SpreadDays)) > DateTimeOffset.Now)
                 .ToDictionary(c => c.Key, c => c.Value.CloseValue);
             return dictionary;
-        }
-
-        public struct HistoDayData
-        {
-            public DateTimeOffset TimeStamp;
-            public double OpenValue;
-            public double HighValue;
-            public double LowValue;
-            public double CloseValue;
         }
     }
 }

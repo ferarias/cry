@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using System.Globalization;
 
-namespace cry
+namespace Cry
 {
     public static class CoinSnapshot
     {

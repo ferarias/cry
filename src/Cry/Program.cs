@@ -3,23 +3,22 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Cry;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
 
-namespace cry
+namespace Cry
 {
-    class Program
+    internal class Program
     {
         // some constants...
-        private static string _basePath = AppDomain.CurrentDomain.BaseDirectory;
+        private const int MaxItemsToRetrieveExchangeData = 2000;
+        private static readonly string BasePath = AppDomain.CurrentDomain.BaseDirectory;
 
-        const int MaxMarkets = 15;
-        const double ClosePriceThreshold = 100;
-        const int MaxItemsToRetrieveExchangeData = 2000;
+        private const int MaxMarkets = 15;
+        private const double ClosePriceThreshold = 100;
 
-        static void Main(string[] args)
+        private static void Main()
         {
             MainAsync().GetAwaiter().GetResult();
         }
@@ -41,7 +40,7 @@ namespace cry
             {
                 Console.Write($"{market}...");
 
-                var timeSeries = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market.Key);
+                var timeSeries = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market.Key, MaxItemsToRetrieveExchangeData);
                 if(timeSeries.Any())
                     closePriceTimeSeriesByExchange.Add(market.Key, timeSeries);
 
@@ -65,12 +64,12 @@ namespace cry
             Console.Write("Market 2? ");
             var market2 = Console.ReadLine();
 
-            var market1timeSeries = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market1);
-            var market2timeSeries = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market2);
-            var comparison = from series1row in market1timeSeries
-                             join series2row in market2timeSeries on series1row.Key equals series2row.Key
-                             select new Comparison { Date = series1row.Key, Coin1 = series1row.Value, Coin2 = series2row.Value };
-            PlotMarketPairComparison(market1, market1timeSeries, market2, market2timeSeries, $"{market1} vs {market2}");
+            var market1TimeSeries = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market1, MaxItemsToRetrieveExchangeData);
+            var market2TimeSeries = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market2, MaxItemsToRetrieveExchangeData);
+            var comparison = from series1Row in market1TimeSeries
+                             join series2Row in market2TimeSeries on series1Row.Key equals series2Row.Key
+                             select new Comparison { Date = series1Row.Key, Coin1 = series1Row.Value, Coin2 = series2Row.Value };
+            PlotMarketPairComparison(market1, market1TimeSeries, market2, market2TimeSeries, $"{market1} vs {market2}");
 
             Console.WriteLine("--------Date ----Market A ----Market B");
             foreach (var item in comparison)
@@ -112,7 +111,7 @@ namespace cry
                 StringFormat = "MMMM"
             });
 
-            using (var stream = File.Create(Path.Combine(_basePath, $"{title}.pdf")))
+            using (var stream = File.Create(Path.Combine(BasePath, $"{title}.pdf")))
             {
                 var pdfExporter = new PdfExporter {Width = 600, Height = 400};
                 pdfExporter.Export(model, stream);
@@ -148,7 +147,7 @@ namespace cry
             });
 
 
-            using (var stream = File.Create(Path.Combine(_basePath, $"{title}.pdf")))
+            using (var stream = File.Create(Path.Combine(BasePath, $"{title}.pdf")))
             {
                 var pdfExporter = new PdfExporter {Width = 600, Height = 400};
                 pdfExporter.Export(model, stream);
