@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using OxyPlot;
@@ -13,6 +14,7 @@ namespace Cry
     {
         // some constants...
         private const int MaxItemsToRetrieveExchangeData = 2000;
+
         private static readonly string BasePath = AppDomain.CurrentDomain.BaseDirectory;
 
         private const int MaxMarkets = 12;
@@ -29,9 +31,11 @@ namespace Cry
             // define a pair
             const string fsym = "ETH";
             const string tsym = "USD";
+            var ci = new CultureInfo("en-US");
+
 
             // Get best markets to operate with
-            var markets = await CoinSnapshot.GetVolume24HByMarket(fsym, tsym);
+            var markets = await CoinSnapshot.GetVolume24HByMarket(fsym, tsym, ci);
 
             var closePriceTimeSeriesByExchange = new Dictionary<string, IDictionary<DateTimeOffset, double>>();
             foreach (var market in markets
@@ -40,7 +44,8 @@ namespace Cry
             {
                 Console.Write($"{market}...");
 
-                var timeSeries = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market.Key, MaxItemsToRetrieveExchangeData);
+                var timeSeries =
+                    await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market.Key, MaxItemsToRetrieveExchangeData, ci);
                 if (timeSeries.Any())
                     closePriceTimeSeriesByExchange.Add(market.Key, timeSeries);
 
@@ -64,13 +69,14 @@ namespace Cry
             Console.Write("Market 2? ");
             var market2 = Console.ReadLine();
 
-            var market1TimeSeries = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market1, MaxItemsToRetrieveExchangeData);
-            var market2TimeSeries = await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market2, MaxItemsToRetrieveExchangeData);
-            var comparison = from series1Row in market1TimeSeries
-                             join series2Row in market2TimeSeries on series1Row.Key equals series2Row.Key
-                             select new Comparison { Date = series1Row.Key, Coin1 = series1Row.Value, Coin2 = series2Row.Value };
+            var market1TimeSeries =
+                await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market1, MaxItemsToRetrieveExchangeData, ci);
+            var market2TimeSeries =
+                await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market2, MaxItemsToRetrieveExchangeData, ci);
+
             PlotMarketPairComparison(market1, market1TimeSeries, market2, market2TimeSeries, $"{market1} vs {market2}");
 
+            var comparison = new Comparison(market1, market2, market1TimeSeries, market2TimeSeries);
             Console.WriteLine("--------Date ----Market A ----Market B");
             foreach (var item in comparison)
             {
@@ -79,16 +85,15 @@ namespace Cry
 
             try
             {
-                StatArb.BackTesting(comparison);
+                StatArb.BackTesting(comparison, 1000f);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex);
                 throw;
             }
         }
 
-        
 
         private static void PlotMarketPairComparison(
             string market1,
@@ -108,10 +113,10 @@ namespace Cry
             };
 
 
-            var lineSeries1 = new LineSeries() { Title = market1, StrokeThickness = 1, Color = OxyColors.Blue };
+            var lineSeries1 = new LineSeries() {Title = market1, StrokeThickness = 1, Color = OxyColors.Blue};
             lineSeries1.Points.AddRange(series1.Select(x => new DataPoint(Axis.ToDouble(x.Key.Date), x.Value)));
             model.Series.Add(lineSeries1);
-            var lineSeries2 = new LineSeries() { Title = market2, StrokeThickness = 1, Color = OxyColors.Red };
+            var lineSeries2 = new LineSeries() {Title = market2, StrokeThickness = 1, Color = OxyColors.Red};
             lineSeries2.Points.AddRange(series2.Select(x => new DataPoint(Axis.ToDouble(x.Key.Date), x.Value)));
             model.Series.Add(lineSeries2);
 
@@ -124,7 +129,7 @@ namespace Cry
 
             using (var stream = File.Create(Path.Combine(BasePath, $"{title}.pdf")))
             {
-                var pdfExporter = new PdfExporter { Width = 600, Height = 400 };
+                var pdfExporter = new PdfExporter {Width = 600, Height = 400};
                 pdfExporter.Export(model, stream);
             }
         }
@@ -132,7 +137,7 @@ namespace Cry
 
         private static void PlotClosePrices(
             Dictionary<string, IDictionary<DateTimeOffset, double>> closePriceTimeSeriesByExchange,
-        string title)
+            string title)
         {
             var model = new PlotModel
             {
@@ -145,7 +150,7 @@ namespace Cry
 
             foreach (var priceTimeSeries in closePriceTimeSeriesByExchange)
             {
-                var cs = new LineSeries() { Title = priceTimeSeries.Key, StrokeThickness = 0.2 };
+                var cs = new LineSeries() {Title = priceTimeSeries.Key, StrokeThickness = 0.2};
                 cs.Points.AddRange(
                     priceTimeSeries.Value.Select(x => new DataPoint(Axis.ToDouble(x.Key.Date), x.Value)));
                 model.Series.Add(cs);
@@ -160,7 +165,7 @@ namespace Cry
 
             using (var stream = File.Create(Path.Combine(BasePath, $"{title}.pdf")))
             {
-                var pdfExporter = new PdfExporter { Width = 600, Height = 400 };
+                var pdfExporter = new PdfExporter {Width = 600, Height = 400};
                 pdfExporter.Export(model, stream);
             }
         }

@@ -5,15 +5,13 @@ namespace Cry
 {
     public class StatArb
     {
-        public static void BackTesting(IEnumerable<Comparison> comparison)
+        public static void BackTesting(IEnumerable<ComparisonRow> comparison, double investment)
         {
             //# Backtesting Stat Arb trading strategy for ETH/USD at Exmo and Kraken
             //# cryptocurrency exchanges
 
-            //# initial parameters
-            double investment = 10000f;  //# USD
-            double account1 = investment / 2;
-            double account2 = investment / 2;  //# USD
+            var account1 = investment / 2;
+            var account2 = investment / 2;  //# USD
             var position = 0.5 * (investment / 2); //# USD
 
             var roi = new List<double>();
@@ -23,20 +21,20 @@ namespace Cry
             var exchange1ProfitAndLoss = new List<double>();
             var exchange2ProfitAndLoss = new List<double>();
 
-            var trade = false;
-            var new_trade = false;
             var tradeProfitAndLoss = new List<double>();
 
-            Mode asset1Mode = Mode.Undefined;
-            Mode asset2Mode = Mode.Undefined;
+            var asset1Mode = Mode.Undefined;
+            var asset2Mode = Mode.Undefined;
 
-            Mode openAsset1Mode = Mode.Undefined;
-            Mode openAsset2Mode = Mode.Undefined;
+            var openAsset1Mode = Mode.Undefined;
+            var openAsset2Mode = Mode.Undefined;
             double openAsset1Price = 0;
             double openAsset2Price = 0;
 
 
-            bool firstTrade = true;
+            var trade = false;
+            var newTrade = false;
+            var firstTrade = true;
             foreach (var item in comparison)
             {
 
@@ -46,22 +44,23 @@ namespace Cry
                     asset2Mode = Mode.Long;
                     if (!trade)
                     {
-                        openAsset1Price = item.Coin1;  //# open prices
+                        // open prices
+                        openAsset1Price = item.Coin1;  
                         openAsset2Price = item.Coin2;
                         openAsset1Mode = asset1Mode;
                         openAsset2Mode = asset2Mode;
                         trade = true;
-                        Console.WriteLine("new traded opened");
-                        new_trade = false;
+                        Console.WriteLine(">> New trade opened");
+                        newTrade = false;
 
                     }
                     else if (asset1Mode == openAsset1Mode)
                     {
-                        new_trade = false; //  # flag
+                        newTrade = false; //  # flag
                     }
                     else if (asset1Mode == openAsset2Mode)
                     {
-                        new_trade = true;  // # flag
+                        newTrade = true;  // # flag
                     }
                 }
                 else if (item.Coin2 > item.Coin1)
@@ -75,44 +74,45 @@ namespace Cry
                         openAsset1Mode = asset1Mode;
                         openAsset2Mode = asset2Mode;
                         trade = true;
-                        Console.WriteLine("new traded opened");
-                        new_trade = false;
+                        Console.WriteLine(">> New trade opened");
+                        newTrade = false;
 
                     }
                     else if (asset1Mode == openAsset1Mode)
                     {
-                        new_trade = false; //  # flag
+                        newTrade = false; //  # flag
                     }
                     else if (asset1Mode == openAsset2Mode)
                     {
-                        new_trade = true;  // # flag
+                        newTrade = true;  // # flag
                     }
                 }
 
                 if (firstTrade)
                 {
-                    Console.WriteLine($"{item.Coin1}, {item.Coin1}, {asset1Mode}, {asset2Mode}, {trade}, ----first trade info");
+                    Console.WriteLine("                 Value Coin 1 Value Coin 2 Asset 1 Asset 2 Trade");
+                    Console.WriteLine($"First trade info {item.Coin1,-12:C} {item.Coin2,-12:C} {asset1Mode,-7} {asset2Mode,-7} {trade,-5}");
                 }
                 else
                 {
-                    if (new_trade)
+                    if (newTrade)
                     {
                         // # close current position
                         if (openAsset1Mode == Mode.Short)
                         {
-                            // # PnL of both trades
-                            var pnl_asset1 = openAsset1Price / item.Coin1 - 1;
-                            var pnl_asset2 = item.Coin2 / openAsset2Price - 1;
-                            exchange1ProfitAndLoss.Add(pnl_asset1);
-                            exchange2ProfitAndLoss.Add(pnl_asset2);
-                            Console.WriteLine($"{openAsset1Price}, {item.Coin1}, {openAsset2Price}, {item.Coin2}, {openAsset1Mode}, {openAsset2Mode}, {pnl_asset1}, {pnl_asset2}");
+                            // # Profit and Loss of both trades
+                            var pnlAsset1 = openAsset1Price / item.Coin1 - 1;
+                            var pnlAsset2 = item.Coin2 / openAsset2Price - 1;
+                            exchange1ProfitAndLoss.Add(pnlAsset1);
+                            exchange2ProfitAndLoss.Add(pnlAsset2);
+                            Console.WriteLine($"Open Asset 1: {openAsset1Price}, Coin1: {item.Coin1}, Open Asset 2:{openAsset2Price}, Coin 2:{item.Coin2}, Asset 1:{openAsset1Mode}, Asset 2:{openAsset2Mode}, PnL Asset 1:{pnlAsset1:C}, PnL Asset 2:{pnlAsset2:C}");
                             // # update both accountsS
-                            account1 = account1 + position * pnl_asset1;
-                            account2 = account2 + position * pnl_asset2;
-                            Console.WriteLine("accounts [USD] = {0}, {1}", account1, account2);
-                            if ((account1 <= 0) || (account2 <= 0))
+                            account1 = account1 + position * pnlAsset1;
+                            account2 = account2 + position * pnlAsset2;
+                            Console.WriteLine("Accounts (USD) = {0}, {1}", account1, account2);
+                            if (account1 <= 0 || account2 <= 0)
                             {
-                                Console.WriteLine("--trading halted");
+                                Console.WriteLine("XX Trading halted");
                                 break;
                             }
                             // # return on investment (ROI)
@@ -122,7 +122,7 @@ namespace Cry
                             ac2.Add(account2);
                             money.Add(total);
                             Console.WriteLine("ROI = {0}", total / investment - 1);
-                            Console.WriteLine("trade closed\n");
+                            Console.WriteLine("<< Trade closed");
                             trade = false;
 
                             // # open a new trade
@@ -141,25 +141,26 @@ namespace Cry
                                 openAsset2Mode = asset2Mode;
                             }
                             trade = true;
-                            Console.WriteLine("new trade opened {0} {1} {2} {3}", asset1Mode, asset2Mode, openAsset1Price, openAsset2Price);
+                            Console.WriteLine("                 Open Asset 1 Open Asset 2 Asset 1 Asset 2 Trade");
+                            Console.WriteLine($"New trade opened {openAsset1Price,-12:C} {openAsset2Price,-12:C} {asset1Mode,-7} {asset2Mode,-7}");
                         }
 
                         // # close current position
                         if (openAsset1Mode == Mode.Short)
                         {
-                            //# PnL of both trades
-                            var pnl_asset1 = item.Coin1 / openAsset1Price - 1;
-                            var pnl_asset2 = openAsset2Price / item.Coin2 - 1;
-                            exchange1ProfitAndLoss.Add(pnl_asset1);
-                            exchange2ProfitAndLoss.Add(pnl_asset2);
-                            Console.WriteLine($"{openAsset1Price}, {item.Coin1}, {openAsset2Price}, {item.Coin2}, {openAsset1Mode}, {openAsset2Mode}, {pnl_asset1}, {pnl_asset2}");
+                            //# Profit and Loss of both trades
+                            var pnlAsset1 = item.Coin1 / openAsset1Price - 1;
+                            var pnlAsset2 = openAsset2Price / item.Coin2 - 1;
+                            exchange1ProfitAndLoss.Add(pnlAsset1);
+                            exchange2ProfitAndLoss.Add(pnlAsset2);
+                            Console.WriteLine($"{openAsset1Price}, {item.Coin1}, {openAsset2Price}, {item.Coin2}, {openAsset1Mode}, {openAsset2Mode}, {pnlAsset1}, {pnlAsset2}");
                             // # update both accounts
-                            account1 = account1 + position * pnl_asset1;
-                            account2 = account2 + position * pnl_asset2;
-                            Console.WriteLine("accounts [USD] = {0}, {1}", account1, account2);
+                            account1 = account1 + position * pnlAsset1;
+                            account2 = account2 + position * pnlAsset2;
+                            Console.WriteLine("Accounts (USD) = {0}, {1}", account1, account2);
                             if ((account1 <= 0) || (account2 <= 0))
                             {
-                                Console.WriteLine("--trading halted");
+                                Console.WriteLine("XX Trading halted");
                                 break;
                             }
                             // # return on investment (ROI)
@@ -168,9 +169,9 @@ namespace Cry
                             ac1.Add(account1);
                             ac2.Add(account2);
                             money.Add(total);
-                            tradeProfitAndLoss.Add(pnl_asset1 + pnl_asset2);
+                            tradeProfitAndLoss.Add(pnlAsset1 + pnlAsset2);
                             Console.WriteLine("ROI = {0}", total / investment - 1);
-                            Console.WriteLine("trade closed\n");
+                            Console.WriteLine("<< Trade closed");
                             trade = false;
 
                             // # open a new trade
@@ -188,14 +189,15 @@ namespace Cry
                                 openAsset1Mode = asset1Mode;
                                 openAsset2Mode = asset2Mode;
                             }
-                            new_trade = false;
+                            newTrade = false;
                             trade = true;
-                            Console.WriteLine("new trade opened: {0} {1} {2} {3}", asset1Mode, asset2Mode, openAsset1Price, openAsset2Price);
+                            Console.WriteLine("                 Open Asset 1 Open Asset 2 Asset 1 Asset 2 Trade");
+                            Console.WriteLine($"New trade opened {openAsset1Price,-12:C} {openAsset2Price,-12:C} {asset1Mode,-7} {asset2Mode,-7}");
                         }
                     }
                     else
                     {
-                        Console.WriteLine($"   {item.Coin1}, {item.Coin2}, {asset1Mode}, {asset2Mode}");
+                        Console.WriteLine($"                 {item.Coin1,-12:C} {item.Coin2,-12:C} {asset1Mode,-7} {asset2Mode,-7}");
                     }
                 }
                 firstTrade = false;

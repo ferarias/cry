@@ -17,9 +17,9 @@ namespace Cry
         /// <returns></returns>
         public static async Task<IDictionary<string, double>> GetVolume24HByMarket(
             string fsym,
-            string tsym)
+            string tsym, 
+            CultureInfo ci)
         {
-            var ci = new CultureInfo("en-US");
             var url = $"{BaseUrl}/?fsym={fsym}&tsym={tsym}";
             int retries = 3;
 

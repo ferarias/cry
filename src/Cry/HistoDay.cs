@@ -24,11 +24,10 @@ namespace Cry
         /// <param name="exchange">Exchange.</param>
         /// <param name="limit">Limit n of rows</param>
         public static async Task<IDictionary<DateTimeOffset, HistoDayData>> GetExchangeData(
-            string fsym, string tsym, string exchange, int limit)
+            string fsym, string tsym, string exchange, int limit, CultureInfo ci)
         {
             var url = $"{BaseUrl}?fsym={fsym}&tsym={tsym}&e={exchange}&limit={limit}";
             var client = new HttpClient();
-            var ci = new CultureInfo("en-US");
             var result = await client.GetStringAsync(url);
             var parsedResult = JObject.Parse(result);
             if ((string) parsedResult["Response"] == "Error") throw new Exception((string) parsedResult["Message"]);
@@ -49,9 +48,9 @@ namespace Cry
         }
 
         public static async Task<IDictionary<DateTimeOffset, double>> GetExchangeCloseTimeSeries(string fsym,
-            string tsym, string market, int limit)
+            string tsym, string market, int limit, CultureInfo ci)
         {
-            var exchangeInfo = await GetExchangeData(fsym, tsym, market, limit);
+            var exchangeInfo = await GetExchangeData(fsym, tsym, market, limit, ci);
             if (exchangeInfo.Count <= 1) return new Dictionary<DateTimeOffset, double>();
 
             var dictionary = exchangeInfo
