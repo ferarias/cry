@@ -6,15 +6,22 @@ namespace Cry
 {
     public class Comparison : List<ComparisonRow>
     {
-        public Comparison(string m1, string m2, IDictionary<DateTimeOffset, double> series1, IDictionary<DateTimeOffset, double> series2)
+        public Comparison(IEnumerable<ComparisonRow> data)
         {
-            Market1 = m1;
-            Market2 = m2;
+            AddRange(data);
+        }
+
+        public Comparison(IDictionary<DateTimeOffset, double> series1, IDictionary<DateTimeOffset, double> series2)
+        {
             AddRange(from series1Row in series1
                      join series2Row in series2 on series1Row.Key equals series2Row.Key
-                     select new ComparisonRow { Date = series1Row.Key, Coin1 = series1Row.Value, Coin2 = series2Row.Value });
+                     select new ComparisonRow { Date = series1Row.Key, Exchange1Value = series1Row.Value, Exchange2Value = series2Row.Value });
 
         }
+
+        public string FiatCurrency { get; set; }
+        public string CryptoCurrency { get; set; }
+
         public string Market1 { get; set; }
         public string Market2 { get; set; }
     }

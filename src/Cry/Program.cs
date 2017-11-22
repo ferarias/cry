@@ -74,13 +74,20 @@ namespace Cry
             var market2TimeSeries =
                 await HistoDay.GetExchangeCloseTimeSeries(fsym, tsym, market2, MaxItemsToRetrieveExchangeData, ci);
 
-            PlotMarketPairComparison(market1, market1TimeSeries, market2, market2TimeSeries, $"{market1} vs {market2}");
+            var comparison = new Comparison(market1TimeSeries, market2TimeSeries)
+            {
+                FiatCurrency = fsym,
+                CryptoCurrency = tsym,
+                Market1 = market1,
+                Market2 = market2
+            };
 
-            var comparison = new Comparison(market1, market2, market1TimeSeries, market2TimeSeries);
+            PlotMarketPairComparison(comparison);
+
             Console.WriteLine("--------Date ----Market A ----Market B");
             foreach (var item in comparison)
             {
-                Console.WriteLine("{0,12} {1,8:#.###} {2,8:#.###}", item.Date, item.Coin1, item.Coin2);
+                Console.WriteLine("{0,12} {1,8:#.###} {2,8:#.###}", item.Date, item.Exchange1Value, item.Exchange2Value);
             }
 
             try
@@ -95,17 +102,12 @@ namespace Cry
         }
 
 
-        private static void PlotMarketPairComparison(
-            string market1,
-            IDictionary<DateTimeOffset, double> series1,
-            string market2,
-            IDictionary<DateTimeOffset, double> series2,
-            string title)
+        private static void PlotMarketPairComparison(Cry.Comparison comparison)
 
         {
             var model = new PlotModel
             {
-                Title = title,
+                Title = $"{comparison.Market1} vs {comparison.Market2}",
                 LegendPlacement = LegendPlacement.Outside,
                 LegendPosition = LegendPosition.BottomCenter,
                 LegendOrientation = LegendOrientation.Horizontal,
@@ -113,11 +115,11 @@ namespace Cry
             };
 
 
-            var lineSeries1 = new LineSeries() {Title = market1, StrokeThickness = 1, Color = OxyColors.Blue};
-            lineSeries1.Points.AddRange(series1.Select(x => new DataPoint(Axis.ToDouble(x.Key.Date), x.Value)));
+            var lineSeries1 = new LineSeries() {Title = comparison.Market1, StrokeThickness = 1, Color = OxyColors.Blue};
+            lineSeries1.Points.AddRange(comparison.Select(x => new DataPoint(Axis.ToDouble(x.Date), x.Exchange1Value)));
             model.Series.Add(lineSeries1);
-            var lineSeries2 = new LineSeries() {Title = market2, StrokeThickness = 1, Color = OxyColors.Red};
-            lineSeries2.Points.AddRange(series2.Select(x => new DataPoint(Axis.ToDouble(x.Key.Date), x.Value)));
+            var lineSeries2 = new LineSeries() {Title = comparison.Market2, StrokeThickness = 1, Color = OxyColors.Red};
+            lineSeries2.Points.AddRange(comparison.Select(x => new DataPoint(Axis.ToDouble(x.Date), x.Exchange2Value)));
             model.Series.Add(lineSeries2);
 
             model.Axes.Add(new DateTimeAxis
@@ -127,7 +129,7 @@ namespace Cry
                 StringFormat = "MMMM"
             });
 
-            using (var stream = File.Create(Path.Combine(BasePath, $"{title}.pdf")))
+            using (var stream = File.Create(Path.Combine(BasePath, $"{model.Title}.pdf")))
             {
                 var pdfExporter = new PdfExporter {Width = 600, Height = 400};
                 pdfExporter.Export(model, stream);

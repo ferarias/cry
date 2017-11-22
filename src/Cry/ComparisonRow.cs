@@ -6,9 +6,9 @@ namespace Cry
     {
         public DateTimeOffset Date { get; set; }
 
-        public double Coin1 { get; set; }
+        public double Exchange1Value { get; set; }
 
-        public double Coin2 { get; set; }
+        public double Exchange2Value { get; set; }
 
     }
 }

@@ -204,13 +204,20 @@ namespace CryTests
                 new ComparisonRow {Date = DateTimeOffset.Parse("11/15/2017 12:00:00 AM +01:00", ci), Coin1 = 329.31, Coin2 = 329.31}
             };
 
+            var comparison = new Comparison(testData)
+            {
+                FiatCurrency = "USD",
+                CryptoCurrency = "ETH",
+                Market1 = "Exmo",
+                Market2 = "Kraken"
+            };
 
             var originalConsoleOut = Console.Out;
             using (var writer = new StringWriter())
             {
                 Console.SetOut(writer);
                 const double investment = 10000;
-                StatArb.BackTesting(testData, investment);
+                StatArb.BackTesting(comparison, investment);
 
                 writer.Flush();
                 var log = writer.GetStringBuilder().ToString();
