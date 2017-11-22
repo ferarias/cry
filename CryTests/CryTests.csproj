@@ -16,4 +16,10 @@
     <ProjectReference Include="..\src\Cry\Cry.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="testdata.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
