@@ -29,7 +29,7 @@ namespace CryTests
                 new ComparisonRow {Date = DateTimeOffset.Parse("5/24/2017 12:00:00 AM +02:00", ci), Coin1 = 188.29, Coin2 = 185.24},
                 new ComparisonRow {Date = DateTimeOffset.Parse("5/25/2017 12:00:00 AM +02:00", ci), Coin1 = 172, Coin2 = 168},
                 new ComparisonRow {Date = DateTimeOffset.Parse("5/26/2017 12:00:00 AM +02:00", ci), Coin1 = 161.52, Coin2 = 158.5},
-                new ComparisonRow {Date = DateTimeOffset.Parse("5/27/2017 12:00:00 AM +02:00", ci), Coin1 = 149.55, Coin2 = 151.61},
+                new ComparisonRow {Date = DateTimeOffset.Parse("5/27/2017 12:00:00 AM +02:00", ci), Coin1 = 149.55, Coin2 = 151.61}, // *
                 new ComparisonRow {Date = DateTimeOffset.Parse("5/28/2017 12:00:00 AM +02:00", ci), Coin1 = 167.07, Coin2 = 168.29},
                 new ComparisonRow {Date = DateTimeOffset.Parse("5/29/2017 12:00:00 AM +02:00", ci), Coin1 = 183.68, Coin2 = 193.3},
                 new ComparisonRow {Date = DateTimeOffset.Parse("5/30/2017 12:00:00 AM +02:00", ci), Coin1 = 222.5, Coin2 = 226.11},
@@ -43,9 +43,9 @@ namespace CryTests
                 new ComparisonRow {Date = DateTimeOffset.Parse("6/7/2017 12:00:00 AM +02:00", ci), Coin1 = 253.74, Coin2 = 256.19},
                 new ComparisonRow {Date = DateTimeOffset.Parse("6/8/2017 12:00:00 AM +02:00", ci), Coin1 = 249.41, Coin2 = 260.24},
                 new ComparisonRow {Date = DateTimeOffset.Parse("6/9/2017 12:00:00 AM +02:00", ci), Coin1 = 269, Coin2 = 279.85},
-                new ComparisonRow {Date = DateTimeOffset.Parse("6/10/2017 12:00:00 AM +02:00", ci), Coin1 = 326.42, Coin2 = 326},
-                new ComparisonRow {Date = DateTimeOffset.Parse("6/11/2017 12:00:00 AM +02:00", ci), Coin1 = 332, Coin2 = 333.1},
-                new ComparisonRow {Date = DateTimeOffset.Parse("6/12/2017 12:00:00 AM +02:00", ci), Coin1 = 390, Coin2 = 385},
+                new ComparisonRow {Date = DateTimeOffset.Parse("6/10/2017 12:00:00 AM +02:00", ci), Coin1 = 326.42, Coin2 = 326}, // *
+                new ComparisonRow {Date = DateTimeOffset.Parse("6/11/2017 12:00:00 AM +02:00", ci), Coin1 = 332, Coin2 = 333.1}, // *
+                new ComparisonRow {Date = DateTimeOffset.Parse("6/12/2017 12:00:00 AM +02:00", ci), Coin1 = 390, Coin2 = 385}, // *
                 new ComparisonRow {Date = DateTimeOffset.Parse("6/13/2017 12:00:00 AM +02:00", ci), Coin1 = 393.2, Coin2 = 386.13},
                 new ComparisonRow {Date = DateTimeOffset.Parse("6/14/2017 12:00:00 AM +02:00", ci), Coin1 = 369.41, Coin2 = 347.24},
                 new ComparisonRow {Date = DateTimeOffset.Parse("6/15/2017 12:00:00 AM +02:00", ci), Coin1 = 357.3, Coin2 = 345.99},
@@ -60,8 +60,8 @@ namespace CryTests
                 new ComparisonRow {Date = DateTimeOffset.Parse("6/24/2017 12:00:00 AM +02:00", ci), Coin1 = 317.47, Coin2 = 302.15},
                 new ComparisonRow {Date = DateTimeOffset.Parse("6/25/2017 12:00:00 AM +02:00", ci), Coin1 = 295, Coin2 = 277},
                 new ComparisonRow {Date = DateTimeOffset.Parse("6/26/2017 12:00:00 AM +02:00", ci), Coin1 = 264, Coin2 = 254.49},
-                new ComparisonRow {Date = DateTimeOffset.Parse("6/27/2017 12:00:00 AM +02:00", ci), Coin1 = 280.93, Coin2 = 283.66},
-                new ComparisonRow {Date = DateTimeOffset.Parse("6/28/2017 12:00:00 AM +02:00", ci), Coin1 = 323, Coin2 = 316.2},
+                new ComparisonRow {Date = DateTimeOffset.Parse("6/27/2017 12:00:00 AM +02:00", ci), Coin1 = 280.93, Coin2 = 283.66}, // *
+                new ComparisonRow {Date = DateTimeOffset.Parse("6/28/2017 12:00:00 AM +02:00", ci), Coin1 = 323, Coin2 = 316.2}, // *
                 new ComparisonRow {Date = DateTimeOffset.Parse("6/29/2017 12:00:00 AM +02:00", ci), Coin1 = 300.02, Coin2 = 293},
                 new ComparisonRow {Date = DateTimeOffset.Parse("6/30/2017 12:00:00 AM +02:00", ci), Coin1 = 290, Coin2 = 280},
                 new ComparisonRow {Date = DateTimeOffset.Parse("7/1/2017 12:00:00 AM +02:00", ci), Coin1 = 273.1, Coin2 = 256},
