@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CryCompareApi\CryCompareApi.csproj" />
     <ProjectReference Include="..\src\Cry\Cry.csproj" />
   </ItemGroup>
 
