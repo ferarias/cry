@@ -10,9 +10,16 @@ namespace CryTests
         [Fact]
         public async Task TestConnector()
         {
-            var connector = new ApiConnector();
-            var response = await connector.GetAsync("api/data/coinlist");
-            Console.WriteLine(response);
+            using (var connector = new ApiConnector())
+            {
+                var response = await connector.GetCoinList();
+                if(response.Response == ApiConnector.ResponseType.Success)
+                Console.WriteLine(response.Data);
+
+                var priceList = await connector.GetPrice("BTC", new string[] { "USD", "AUD", "EUR" });
+                Console.WriteLine(priceList);
+            }
+            
         }
 
     }
