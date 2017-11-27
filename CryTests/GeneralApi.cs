@@ -16,8 +16,16 @@ namespace CryTests
                 if(response.Response == ApiConnector.ResponseType.Success)
                 Console.WriteLine(response.Data);
 
-                var priceList = await connector.GetPrice("BTC", new string[] { "USD", "AUD", "EUR" });
+                var priceList = await connector.GetPrice("BTC", new[] { "USD", "AUD", "EUR" });
                 Console.WriteLine(priceList);
+
+                var priceMatrix = await connector.GetPriceMulti(new[] { "ETH", "DASH", "XMR" }, new[] { "USD", "AUD", "EUR" });
+                Console.WriteLine(priceMatrix);
+
+                var priceRawDisplayFull = await connector.GetPriceMultiFull(new[] { "ETH", "DASH", "XMR" }, new string[] { "USD", "AUD", "EUR" });
+                Console.WriteLine(priceMatrix);
+
+
             }
             
         }

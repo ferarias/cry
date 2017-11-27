@@ -51,7 +51,7 @@ namespace CryCompareApi
             string exchange = DefaultExchange, string nameOfYourApp = "", bool sign = false, bool tryConversion = true)
         {
             var requestUri = new StringBuilder($"data/price?fsym={fromSymbol}&tsyms={string.Join(',', toSymbols)}");
-            if (!string.IsNullOrWhiteSpace(exchange))
+            if (!string.IsNullOrWhiteSpace(exchange) && exchange != DefaultExchange)
                 requestUri.Append($"&e={exchange}");
             if (!string.IsNullOrWhiteSpace(nameOfYourApp))
                 requestUri.Append($"&extraParams={nameOfYourApp}");
@@ -61,6 +61,38 @@ namespace CryCompareApi
                 requestUri.Append("&tryConversion=false");
 
             return await GetAsync<CoinPriceList>(requestUri.ToString());
+        }
+
+        public async Task<CoinPriceMatrix> GetPriceMulti(IEnumerable<string> fromSymbols, IEnumerable<string> toSymbols,
+            string exchange = DefaultExchange, string nameOfYourApp = "", bool sign = false, bool tryConversion = true)
+        {
+            var requestUri = new StringBuilder($"data/pricemulti?fsyms={string.Join(',', fromSymbols)}&tsyms={string.Join(',', toSymbols)}");
+            if (!string.IsNullOrWhiteSpace(exchange) && exchange != DefaultExchange)
+                requestUri.Append($"&e={exchange}");
+            if (!string.IsNullOrWhiteSpace(nameOfYourApp))
+                requestUri.Append($"&extraParams={nameOfYourApp}");
+            if(sign)
+                requestUri.Append("&sign=true");
+            if(!tryConversion)
+                requestUri.Append("&tryConversion=false");
+
+            return await GetAsync<CoinPriceMatrix>(requestUri.ToString());
+        }
+
+        public async Task<RawDisplayResponse> GetPriceMultiFull(IEnumerable<string> fromSymbols, IEnumerable<string> toSymbols,
+            string exchange = DefaultExchange, string nameOfYourApp = "", bool sign = false, bool tryConversion = true)
+        {
+            var requestUri = new StringBuilder($"data/pricemultifull?fsyms={string.Join(',', fromSymbols)}&tsyms={string.Join(',', toSymbols)}");
+            if (!string.IsNullOrWhiteSpace(exchange) && exchange != DefaultExchange)
+                requestUri.Append($"&e={exchange}");
+            if (!string.IsNullOrWhiteSpace(nameOfYourApp))
+                requestUri.Append($"&extraParams={nameOfYourApp}");
+            if(sign)
+                requestUri.Append("&sign=true");
+            if(!tryConversion)
+                requestUri.Append("&tryConversion=false");
+
+            return await GetAsync<RawDisplayResponse>(requestUri.ToString());
         }
 
         public async Task<T> GetAsync<T>(string requestUri)
